@@ -1,0 +1,482 @@
+<html>
+
+<head>
+	<title>定点工况计算测试</title>
+</head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<!-- <link rel="stylesheet" type="text/css" href="http://apps.bdimg.com/libs/bootstrap-material/0.3.0/css/material.min.css"> -->
+<style type="text/css">
+	body {
+		font-family: '微软雅黑';
+		display: flex;
+		flex-direction: column;
+		justify-content: space-around;
+		height: 230px;
+	}
+
+	span {
+		font-size: 12px;
+	}
+
+	input {
+		padding-left: 5px;
+		margin-bottom: 5px;
+	}
+
+	div {
+		display: flex;
+		flex-direction: row;
+		justify-content: space-between;
+		width: 260px;
+		flex: 1;
+	}
+
+	.input {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.result {
+		flex-direction: column;
+		width: 360px;
+	}
+
+	.result span {
+		margin: 10px 0;
+	}
+</style>
+
+<body>
+	<div class="input">
+		<div>
+			<span>蒸发温度:</span>
+			<input type="text" v-model="steaming" />
+		</div>
+		<div>
+			<span>冷凝温度:</span>
+			<input type="text" v-model="cooling" />
+		</div>
+		<div>
+			<span>过热度:</span>
+			<input type="text" v-model="overheating" />
+		</div>
+		<div>
+			<span>过冷度:</span>
+			<input type="text" v-model="overcooling" />
+		</div>
+		<div>
+			<button @click="getResult()">计算</button>
+		</div>
+	</div>
+	<div class="result">
+		<span>标准吸气密度：{{rou1}}</span>
+		<span>标准吸气比焓：{{hs1}}</span>
+		<span>标准阀前比焓：{{hv1}}</span>
+		<span>标准排气比焓：{{hd1}}</span>
+		<span>自定吸气密度：{{rou2}}</span>
+		<span>自定吸气比焓：{{hs2}}</span>
+		<span>自定阀前比焓：{{hv2}}</span>
+		<span>自定排气比焓：{{hd2}}</span>
+		<span>Ps1：{{Ps1}}</span>
+		<span>Ps2：{{Ps2}}</span>
+		<span>S1：{{S1}}</span>
+		<span>S2：{{S2}}</span>
+	</div>
+</body>
+<script src="https://cdn.bootcss.com/vue/1.0.23/vue.js"></script>
+<script src="https://unpkg.com/vuex"></script>
+<script src="https://cdn.bootcss.com/vue-resource/1.0.3/vue-resource.js"></script>
+<script>
+	const store = new Vuex.Store({
+		state: {
+			rou1: 0,
+			hs1: 0,
+			hv1: 0,
+			hd1: 0,
+			Pd1: 0,
+			Ps1: 0,
+			S1: 0,
+			rou2: 0,
+			hs2: 0,
+			hv2: 0,
+			hd2: 0,
+			Pd2: 0,
+			Ps2: 0,
+			S2: 0
+
+		},
+		mutations: {
+			updateRou1(state, value) {
+				state.rou1 = value
+			},
+			updateHs1(state, value) {
+				state.hs1 = value
+			},
+			updateHv1(state, value) {
+				state.hv1 = value
+			},
+			updateHd1(state, value) {
+				state.hd1 = value
+			},
+			updatePd1(state, value) {
+				state.Pd1 = value
+			},
+			updatePs1(state, value) {
+				state.Ps1 = value
+			},
+			updateS1(state, value) {
+				state.S1 = value
+			},
+			updateRou2(state, value) {
+				state.rou2 = value
+			},
+			updateHs2(state, value) {
+				state.hs2 = value
+			},
+			updateHv2(state, value) {
+				state.hv2 = value
+			},
+			updateHd2(state, value) {
+				state.hd2 = value
+			},
+			updatePd2(state, value) {
+				state.Pd2 = value
+			},
+			updatePs2(state, value) {
+				state.Ps2 = value
+			},
+			updateS2(state, value) {
+				state.S2 = value
+			}
+		}
+	})
+
+	new Vue(
+		{
+			el: 'body',
+			data() {
+				return {
+					host: '127.0.0.1',
+					port: 2552,
+					steaming: 0,
+					cooling: 0,
+					overheating: 0,
+					overheatingStandard: 11.1,
+					overcooling: 0,
+					overcoolingStandard: 8.3,
+					// rou1: 0,
+					// hs1: 0,
+					// hv1: 0,
+					// hd1: 0,
+					// Ps1: 0,
+
+					// get rou1() {
+					// 	return localStorage.getItem('rou1') || 0;
+					// },
+
+					// get hs1() {
+					// 	return localStorage.getItem('hs1') || 0;
+					// },
+					// get hv1() {
+					// 	return localStorage.getItem('hv1') || 0;
+					// },
+					// get hd1() {
+					// 	return localStorage.getItem('hd1') || 0;
+					// },
+					// get Ps1() {
+					// 	return localStorage.getItem('Ps1') || 0;
+					// },
+
+					// set rou1(value) {
+					// 	localStorage.setItem('token', value);
+					// },
+					// rou2: 0,
+					// hs2: 0,
+					// hv2: 0,
+					// hd2: 0,
+					// Ps2: 0,
+					coolant: 'R22'
+				}
+
+			},
+			computed: {
+				rou1() {
+					// return sessionStorage.getItem('rou1') || 0;
+					return store.state.rou1;
+				},
+				hs1() {
+					// return sessionStorage.getItem('hs1') || 0;
+					return store.state.hs1;
+				},
+				hv1() {
+					// return sessionStorage.getItem('hv1') || 0;
+					return store.state.hv1;
+				},
+				hd1() {
+					// return sessionStorage.getItem('hd1') || 0;
+					return store.state.hd1;
+				},
+				Pd1() {
+					return store.state.Pd1;
+				},
+				Ps1() {
+					return store.state.Ps1;
+					// return store.state.Ps1;
+				},
+				S1() {
+					return store.state.S1;
+				},
+				rou2() {
+					// return sessionStorage.getItem('rou2') || 0;
+					return store.state.rou2;
+				},
+				hs2() {
+					// return sessionStorage.getItem('hs2') || 0;
+					return store.state.hs2;
+				},
+				hv2() {
+					// return sessionStorage.getItem('hv2') || 0;
+					return store.state.hv2;
+				},
+				hd2() {
+					// return sessionStorage.getItem('hd2') || 0;
+					return store.state.hd2;
+				},
+				Pd2() {
+					return store.state.Pd2;
+				},
+				Ps2() {
+					// return sessionStorage.getItem('Ps2') || 0;
+					return store.state.Ps2;
+				},
+				S2() {
+					return store.state.S2;
+				},
+				count() {
+					return store.state.count
+				}
+			},
+			// created() {
+			// 	sessionStorage.clear();
+			// 	console.log(sessionStorage);
+			// },
+			methods: {
+				calcRou(overheating, mode) {
+					// let Ps1 = 0;
+					let name1 = 'Temperature [K]';
+					let name2 = 'Vapor Quality [kg/kg]';
+					let value1 = parseFloat(this.steaming) + 273.15;
+					let value2 = 1;
+					let url = `http://${this.host}:${this.port}/performanceCalc?fluid=${this.coolant}&name1=${name1}&name2=${name2}&unit_system=Mass-based&value1=${value1}&value2=${value2}#`;
+					this.$http.get(url)
+						.then((res) => {
+							// Ps1
+							(mode === 'Standard')
+								? (
+									store.commit('updatePs1', res.data.result['Pressure [Pa]'])
+									// this.Ps1 = res.data.result['Pressure [Pa]'],
+									// console.log(`Ps1,${res.data.result['Pressure [Pa]']}`),
+									// sessionStorage.setItem("Ps1", res.data.result['Pressure [Pa]']),
+									// console.log(`localPs1,${sessionStorage.getItem('Ps1')}`)
+								)
+								: (
+									store.commit('updatePs2', res.data.result['Pressure [Pa]'])
+									// this.Ps2 = res.data.result['Pressure [Pa]'],
+									// console.log(`Ps2,${res.data.result['Pressure [Pa]']}`),
+									// sessionStorage.setItem("Ps2", res.data.result['Pressure [Pa]']),
+									// console.log(`localPs2,${sessionStorage.getItem('Ps2')}`)
+								);
+							return res.data.result['Pressure [Pa]']
+						})
+						.then((Ps) => {
+							//rou1
+							name2 = 'Pressure [Pa]' //name1不变，还是Temp
+							value1 = value1 + overheating;
+							value2 = Ps;
+							url = `http://${this.host}:${this.port}/performanceCalc?fluid=${this.coolant}&name1=${name1}&name2=${name2}&unit_system=Mass-based&value1=${value1}&value2=${value2}#`
+							this.$http.get(url)
+								.then((res) => {
+									// 可以一并获取吸气密度rou1 和 吸气比焓hs1
+									(mode === 'Standard')
+										? (
+											store.commit('updateRou1', res.data.result['Density [kg/m3]']),
+											// this.rou1 = res.data.result['Density [kg/m3]'],
+											// console.log(`rou1,${res.data.result['Density [kg/m3]']}`),
+											// sessionStorage.setItem("rou1", res.data.result['Density [kg/m3]']),
+											// console.log(`localrou1,${sessionStorage.getItem('rou1')}`),
+											store.commit('updateHs1', res.data.result['Enthalpy [J/kg]'])
+											// this.hs1 = res.data.result['Enthalpy [J/kg]'],
+											// console.log(`hs1,${res.data.result['Enthalpy [J/kg]']}`),
+											// sessionStorage.setItem("hs1", res.data.result['Enthalpy [J/kg]']),
+											// console.log(`localhs1,${sessionStorage.getItem('hs1')}`)
+										)
+										: (
+											store.commit('updateRou2', res.data.result['Density [kg/m3]']),
+											// this.rou2 = res.data.result['Density [kg/m3]'],
+											// console.log(`rou2,${res.data.result['Density [kg/m3]']}`),
+											// sessionStorage.setItem("rou2", res.data.result['Density [kg/m3]']),
+											// console.log(`localrou2,${sessionStorage.getItem('rou2')}`),
+											store.commit('updateHs2', res.data.result['Enthalpy [J/kg]'])
+											// this.hs2 = res.data.result['Enthalpy [J/kg]'],
+											// console.log(`hs2,${res.data.result['Enthalpy [J/kg]']}`),
+											// sessionStorage.setItem("hs2", res.data.result['Enthalpy [J/kg]']),
+											// console.log(`localhs2,${sessionStorage.getItem('hs2')}`)
+										);
+								})
+						})
+				},
+				calcHv(overcooling, mode) {
+					// let Pd1 = 0;
+					let name1 = 'Temperature [K]'
+					let name2 = 'Vapor Quality [kg/kg]'
+					let value1 = parseFloat(this.cooling) + 273.15
+					let value2 = 1
+					let url = `http://${this.host}:${this.port}/performanceCalc?fluid=${this.coolant}&name1=${name1}&name2=${name2}&unit_system=Mass-based&value1=${value1}&value2=${value2}#`
+					this.$http.get(url)
+						.then((res) => {
+							// Pd1
+							(mode === 'Standard')
+								? (
+									store.commit('updatePd1', res.data.result['Pressure [Pa]'])
+									// this.Pd1 = res.data.result['Pressure [Pa]'],
+									// console.log(`Pd1,${res.data.result['Pressure [Pa]']}`),
+									// sessionStorage.setItem("Pd1", res.data.result['Pressure [Pa]']),
+									// console.log(`localPd1,${sessionStorage.getItem('Pd1')}`)
+
+								)
+								: (
+									store.commit('updatePd2', res.data.result['Pressure [Pa]'])
+									// this.Pd2 = res.data.result['Pressure [Pa]'],
+									// console.log(`Pd2,${res.data.result['Pressure [Pa]']}`),
+									// sessionStorage.setItem("Pd2", res.data.result['Pressure [Pa]']),
+									// console.log(`localPd2,${sessionStorage.getItem('Pd2')}`)
+								)
+							return res.data.result['Pressure [Pa]']
+						})
+						.then((Pd) => {
+							// console.log(`Pd1 is ${Pd1}`);
+							name2 = 'Pressure [Pa]' //name1不变，还是Temp
+							value1 = value1 - overcooling;
+							value2 = Pd;
+							url = `http://${this.host}:${this.port}/performanceCalc?fluid=${this.coolant}&name1=${name1}&name2=${name2}&unit_system=Mass-based&value1=${value1}&value2=${value2}#`
+							this.$http.get(url)
+								.then((res) => {
+									// 获取阀前比焓hv1
+									(mode === 'Standard')
+										? (
+											store.commit('updateHv1', res.data.result['Enthalpy [J/kg]'])
+											// this.hv1 = res.data.result['Enthalpy [J/kg]'],
+											// console.log(`hv1,${res.data.result['Enthalpy [J/kg]']}`),
+											// sessionStorage.setItem("hv1", res.data.result['Enthalpy [J/kg]']),
+											// console.log(`localhv1,${sessionStorage.getItem('hv1')}`)
+
+										)
+										: (
+											store.commit('updateHv2', res.data.result['Enthalpy [J/kg]'])
+											// this.hv2 = res.data.result['Enthalpy [J/kg]'],
+											// console.log(`hv2,${res.data.result['Enthalpy [J/kg]']}`),
+											// sessionStorage.setItem("hv2", res.data.result['Enthalpy [J/kg]']),
+											// console.log(`localhv2,${sessionStorage.getItem('hv2')}`)
+
+										)
+
+								})
+						})
+				},
+				calcHd(overheating, mode) {
+					//Ps
+					let name1 = 'Temperature [K]';
+					let name2 = 'Vapor Quality [kg/kg]';
+					let value1 = parseFloat(this.steaming) + 273.15;
+					let value2 = 1;
+					let url = `http://${this.host}:${this.port}/performanceCalc?fluid=${this.coolant}&name1=${name1}&name2=${name2}&unit_system=Mass-based&value1=${value1}&value2=${value2}#`;
+					this.$http.get(url)
+						.then((res) => {
+							// Ps1
+							(mode === 'Standard')
+								? (
+									store.commit('updatePs1', res.data.result['Pressure [Pa]'])
+									// this.Ps1 = res.data.result['Pressure [Pa]'],
+									// console.log(`Ps1,${res.data.result['Pressure [Pa]']}`),
+									// sessionStorage.setItem("Ps1", res.data.result['Pressure [Pa]']),
+									// console.log(`localPs1,${sessionStorage.getItem('Ps1')}`)
+								)
+								: (
+									store.commit('updatePs2', res.data.result['Pressure [Pa]'])
+									// this.Ps2 = res.data.result['Pressure [Pa]'],
+									// console.log(`Ps2,${res.data.result['Pressure [Pa]']}`),
+									// sessionStorage.setItem("Ps2", res.data.result['Pressure [Pa]']),
+									// console.log(`localPs2,${sessionStorage.getItem('Ps2')}`)
+								);
+							return res.data.result['Pressure [Pa]']
+						})
+						.then((Ps) => {
+							name1 = 'Temperature [K]'
+							name2 = 'Pressure [Pa]'
+							value1 = value1 + overheating;
+							value2 = Ps;
+							let url = `http://${this.host}:${this.port}/performanceCalc?fluid=${this.coolant}&name1=${name1}&name2=${name2}&unit_system=Mass-based&value1=${value1}&value2=${value2}#`;
+							this.$http.get(url)
+								.then((res) => {
+									// S1
+									(mode === 'Standard')
+										? (
+											store.commit('updateS1', res.data.result['Entropy [J/kg/K]']),
+											// console.log(`S1 is ${res.data.result['Entropy [J/kg/K]']}`),
+											sessionStorage.setItem("S1", res.data.result['Entropy [J/kg/K]'])
+											// window.onstorage = function(e) {
+											// console.log( e.key + ' 键已经从 ' + e.oldValue + ' 改变为 ' + e.newValue + '.');
+											// }
+										)
+										: (
+											store.commit('updateS2', res.data.result['Entropy [J/kg/K]']),
+											// console.log(`S2 is ${res.data.result['Entropy [J/kg/K]']}`),
+											sessionStorage.setItem("S2", res.data.result['Entropy [J/kg/K]'])
+											// window.onstorage = function(e) {
+											// console.log( e.key + ' 键已经从 ' + e.oldValue + ' 改变为 ' + e.newValue + '.');
+											// }
+										)
+									return res.data.result['Entropy [J/kg/K]']
+								})
+								.then((S) => {
+									// S => Hd
+									name1 = 'Pressure [Pa]'
+									name2 = 'Entropy [J/kg/K]'
+									// value1 = (mode === 'Standard')?(sessionStorage.getItem("Pd1")):(sessionStorage.getItem("Pd2"));
+									value1 = (mode === 'Standard') ? (this.Pd1) : (this.Pd2);
+									value2 = (mode === 'Standard') ? (this.S1) : (this.S2);
+									url = `http://${this.host}:${this.port}/performanceCalc?fluid=${this.coolant}&name1=${name1}&name2=${name2}&unit_system=Mass-based&value1=${value1}&value2=${value2}#`
+									this.$http.get(url)
+										.then((res) => {
+											// 获取排气比焓hd
+											(mode === 'Standard')
+												? (
+													store.commit('updateHd1', res.data.result['Enthalpy [J/kg]'])
+													// sessionStorage.setItem("hd1", res.data.result['Enthalpy [J/kg]']),
+													// this.hd1 = res.data.result['Enthalpy [J/kg]']
+												)
+												: (
+													store.commit('updateHd2', res.data.result['Enthalpy [J/kg]'])
+													// sessionStorage.setItem("hd2", res.data.result['Enthalpy [J/kg]']),
+													// this.hd2 = res.data.result['Enthalpy [J/kg]']
+												)
+										})
+								})
+						})
+
+				},
+				getResult() {
+					this.calcRou(11.1, 'Standard');
+					this.calcHv(8.3, 'Standard');
+					this.calcHd(11.1, 'Standard');
+					this.calcRou(this.overheating, 'Customized');
+					this.calcHv(this.overcooling, 'Customized');
+					this.calcHd(this.overheating, 'Customized');
+				}
+			}
+
+		})
+
+</script>
+
+</html>
