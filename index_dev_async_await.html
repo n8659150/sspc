@@ -1,0 +1,285 @@
+<html>
+
+<head>
+	<title>定点工况计算测试</title>
+</head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<!-- <link rel="stylesheet" type="text/css" href="http://apps.bdimg.com/libs/bootstrap-material/0.3.0/css/material.min.css"> -->
+<style type="text/css">
+	body {
+		font-family: '微软雅黑';
+		display: flex;
+		flex-direction: column;
+		justify-content: space-around;
+		height: 230px;
+	}
+
+	span {
+		font-size: 12px;
+	}
+
+	input {
+		padding-left: 5px;
+		margin-bottom: 5px;
+	}
+
+	div {
+		display: flex;
+		flex-direction: row;
+		justify-content: space-between;
+		width: 260px;
+		flex: 1;
+	}
+
+	.input {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.result {
+		flex-direction: column;
+		width: 360px;
+	}
+
+	.result span {
+		margin: 10px 0;
+	}
+</style>
+
+<body>
+	<div class="input">
+		<div>
+			<span>蒸发温度:</span>
+			<input type="text" v-model="steaming" />
+		</div>
+		<div>
+			<span>冷凝温度:</span>
+			<input type="text" v-model="cooling" />
+		</div>
+		<div>
+			<span>过热度:</span>
+			<input type="text" v-model="overheating" />
+		</div>
+		<div>
+			<span>过冷度:</span>
+			<input type="text" v-model="overcooling" />
+		</div>
+		<div>
+			<button @click="getResult()">计算</button>
+		</div>
+	</div>
+	<div class="result">
+		<span>标准吸气密度：{{rou1}}</span>
+		<span>标准吸气比焓：{{hs1}}</span>
+		<span>标准阀前比焓：{{hv1}}</span>
+		<span>标准排气比焓：{{hd1}}</span>
+		<span>自定吸气密度：{{rou2}}</span>
+		<span>自定吸气比焓：{{hs2}}</span>
+		<span>自定阀前比焓：{{hv2}}</span>
+		<span>自定排气比焓：{{hd2}}</span>
+	</div>
+</body>
+<script src="https://cdn.bootcss.com/vue/1.0.23/vue.js"></script>
+<script src="https://unpkg.com/vuex"></script>
+<script src="https://cdn.bootcss.com/vue-resource/1.0.3/vue-resource.js"></script>
+<script>
+	const store = new Vuex.Store({
+		state: {
+			rou1: 0,
+			hs1: 0,
+			hv1: 0,
+			hd1: 0,
+			Pd1: 0,
+			rou2: 0,
+			hs2: 0,
+			hv2: 0,
+			hd2: 0,
+			Pd2: 0
+
+		},
+		mutations: {
+			updateRou1(state, value) {
+				state.rou1 = value
+			},
+			updateHs1(state, value) {
+				state.hs1 = value
+			},
+			updateHv1(state, value) {
+				state.hv1 = value
+			},
+			updateHd1(state, value) {
+				state.hd1 = value
+			},
+			updatePd1(state, value) {
+				state.Pd1 = value
+			},
+			updateRou2(state, value) {
+				state.rou2 = value
+			},
+			updateHs2(state, value) {
+				state.hs2 = value
+			},
+			updateHv2(state, value) {
+				state.hv2 = value
+			},
+			updateHd2(state, value) {
+				state.hd2 = value
+			},
+			updatePd2(state, value) {
+				state.Pd2 = value
+			}
+		}
+	})
+
+	new Vue(
+		{
+			el: 'body',
+			data() {
+				return {
+					host: '127.0.0.1',
+					port: 2552,
+					steaming: 0,
+					cooling: 0,
+					overheating: 0,
+					overheatingStandard: 11.1,
+					overcooling: 0,
+					overcoolingStandard: 8.3,
+					coolant: 'R22'
+				}
+
+			},
+			computed: {
+				rou1() {
+					return store.state.rou1;
+				},
+				hs1() {
+					return store.state.hs1;
+				},
+				hv1() {
+					return store.state.hv1;
+				},
+				hd1() {
+					return store.state.hd1;
+				},
+				Pd1() {
+					return store.state.Pd1;
+				},
+				rou2() {
+					return store.state.rou2;
+				},
+				hs2() {
+					return store.state.hs2;
+				},
+				hv2() {
+					return store.state.hv2;
+				},
+				hd2() {
+					return store.state.hd2;
+				},
+				Pd2() {
+					return store.state.Pd2;
+				}
+			},
+			methods: {
+				calcPs(value1,value2,mode) {
+					let name1 = 'Temperature [K]';
+					let name2 = 'Vapor Quality [kg/kg]';
+					let url = `http://${this.host}:${this.port}/performanceCalc?fluid=${this.coolant}&name1=${name1}&name2=${name2}&unit_system=Mass-based&value1=${value1}&value2=${value2}#`;
+					return this.$http.get(url)
+				},
+				calcRou_Hs(value1,value2,overheating,mode){
+					let name1 = 'Temperature [K]';
+					let name2 = 'Pressure [Pa]';
+					let url = `http://${this.host}:${this.port}/performanceCalc?fluid=${this.coolant}&name1=${name1}&name2=${name2}&unit_system=Mass-based&value1=${value1+overheating}&value2=${value2}#`;
+					return this.$http.get(url)
+
+				},
+				calcPd(value1,value2,mode) {
+					let name1 = 'Temperature [K]';
+					let name2 = 'Vapor Quality [kg/kg]';
+					let url = `http://${this.host}:${this.port}/performanceCalc?fluid=${this.coolant}&name1=${name1}&name2=${name2}&unit_system=Mass-based&value1=${value1}&value2=${value2}#`
+					
+					return this.$http.get(url) 
+				},
+				calcHv(value1,value2,overcooling,mode) {
+					let name1 = 'Temperature [K]';
+					let name2 = 'Pressure [Pa]';
+					url = `http://${this.host}:${this.port}/performanceCalc?fluid=${this.coolant}&name1=${name1}&name2=${name2}&unit_system=Mass-based&value1=${value1-overcooling}&value2=${value2}#`;
+					return this.$http.get(url)
+				},
+				calcS(value1,value2,overheating,mode) {
+					let name1 = 'Temperature [K]';
+					let name2 = 'Pressure [Pa]';
+					let url = `http://${this.host}:${this.port}/performanceCalc?fluid=${this.coolant}&name1=${name1}&name2=${name2}&unit_system=Mass-based&value1=${value1+overheating}&value2=${value2}#`;
+					return this.$http.get(url)
+				},
+				calcHd(value1,value2,mode) {
+					let name1 = 'Pressure [Pa]';
+					let name2 = 'Entropy [J/kg/K]';
+					url = `http://${this.host}:${this.port}/performanceCalc?fluid=${this.coolant}&name1=${name1}&name2=${name2}&unit_system=Mass-based&value1=${value1}&value2=${value2}#`;
+					return this.$http.get(url)
+				},
+				async calcResult(mode) {
+					let steaming = parseFloat(this.steaming) + 273.15;
+					let cooling = parseFloat(this.cooling) + 273.15;
+					//1.get Ps
+					let Ps_result = await this.calcPs(steaming,1);
+					let Ps = Ps_result['data']['result']['Pressure [Pa]'];
+					
+					//2.get rou and Hs
+					let overheating = (mode === 'Standard')?this.overheatingStandard:this.overheating;
+					let Rou_Hs_result = await this.calcRou_Hs(steaming,Ps,overheating);
+					let Rou = Rou_Hs_result['data']['result']['Density [kg/m3]'];
+					let Hs = Rou_Hs_result['data']['result']['Enthalpy [J/kg]'];
+
+					//3.get Pd
+
+					let Pd_result = await this.calcPd(cooling,1);
+					let Pd = Pd_result['data']['result']['Pressure [Pa]']
+
+					//4.get Hv
+					let overcooling = (mode === 'Standard')?this.overcoolingStandard:this.overcooling;
+					let Hv_result = await this.calcHv(cooling,Pd,overcooling);
+					let Hv = Hv_result['data']['result']['Enthalpy [J/kg]'];
+
+					//5.get S
+					let S_result = await this.calcS(steaming,Ps,overheating);
+					let S = S_result['data']['result']['Entropy [J/kg/K]'];
+
+					//6.get Hd
+					let Hd_result = await this.calcHd(Pd,S);
+					let Hd = Hd_result['data']['result']['Enthalpy [J/kg]'];
+
+					// bind data
+					(mode === 'Standard')
+					? (
+						store.commit('updatePs1', Ps),
+						store.commit('updateRou1', Rou),
+						store.commit('updateHs1', Hs),
+						store.commit('updatePd1', Pd),
+						store.commit('updateHv1', Hv),
+						store.commit('updateS1',S),
+						store.commit('updateHd1',Hd)
+					)
+					: (
+						store.commit('updatePs2', Ps),
+						store.commit('updateRou2', Rou),
+						store.commit('updateHs2', Hs),
+						store.commit('updatePd2', Pd),
+						store.commit('updateHv2', Hv),
+						store.commit('updateS2',S),
+						store.commit('updateHd2',Hd)
+					);
+				},
+				getResult(){
+					this.calcResult('Standard');
+					this.calcResult('Customized');
+				}
+
+			}
+
+		})
+
+</script>
+
+</html>
